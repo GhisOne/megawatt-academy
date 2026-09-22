@@ -313,6 +313,7 @@ const MWApp = (() => {
             if (typeof MWCertificates !== 'undefined') MWCertificates.init();
             if (typeof MWReports !== 'undefined') MWReports.init();
             if (typeof MWMailer !== 'undefined') MWMailer.init();
+            if (typeof MWBackup !== 'undefined') MWBackup.init();          
         } catch (error) {
             console.error('Erreur initialisation modules:', error);
         }
