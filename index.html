@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="MEGAWATT ACADEMY - Plateforme d'évaluation et de certification professionnelle" />
+    <meta name="author" content="MEGAWATT" />
+    <meta name="theme-color" content="#056a30" />
+    <title>MEGAWATT ACADEMY</title>
+
+    <!-- ===== Google Font : Poppins ===== -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- ===== Favicon (inline SVG) ===== -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23056a30'/%3E%3Ctext x='50' y='65' font-family='Poppins' font-size='50' font-weight='800' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E" />
+
+    <!-- ===== Librairies externes (CDN) ===== -->
+    <!-- jsPDF : génération de certificats PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- SheetJS : import/export XLSX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- QRCode.js : génération QR Code pour certificats -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Chart.js : graphiques rapports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <!-- CryptoJS : hashage des mots de passe -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+
+    <!-- ===== Feuille de style applicative ===== -->
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+    <!-- ============================================================ -->
+    <!-- LOADER GLOBAL                                                -->
+    <!-- ============================================================ -->
+    <div id="app-loader" class="app-loader" aria-hidden="true">
+        <div class="loader-spinner"></div>
+        <p class="loader-text">Chargement de MEGAWATT ACADEMY...</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- CONTENEUR D'AUTHENTIFICATION                                 -->
+    <!-- ============================================================ -->
+    <section id="auth-screen" class="auth-screen" aria-label="Écran de connexion">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <img id="auth-logo-img" src="assets/logo-megawatt.png" alt="Logo MEGAWATT"
+                     onerror="this.style.display='none'; document.getElementById('auth-logo-fallback').style.display='flex';" />
+                <div id="auth-logo-fallback" class="auth-logo-fallback" style="display:none;">
+                    <span>M</span>
+                </div>
+            </div>
+            <h1 class="auth-title">MEGAWATT ACADEMY</h1>
+            <p class="auth-subtitle">Plateforme d'évaluation et de certification</p>
+
+            <form id="login-form" class="auth-form" autocomplete="off">
+                <div class="form-group">
+                    <label for="login-username">Identifiant</label>
+                    <input type="text" id="login-username" name="username"
+                           placeholder="Entrez votre identifiant" required />
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Mot de passe</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="login-password" name="password"
+                               placeholder="Entrez votre mot de passe" required />
+                        <button type="button" class="toggle-password" data-target="login-password"
+                                aria-label="Afficher le mot de passe">
+                            👁
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="login-role">Rôle</label>
+                    <select id="login-role" name="role" required>
+                        <option value="">-- Sélectionner un rôle --</option>
+                        <option value="admin">Administrateur</option>
+                        <option value="formateur">Formateur</option>
+                        <option value="rh">Ressources Humaines</option>
+                        <option value="apprenant">Apprenant</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    Se connecter
+                </button>
+                <p id="login-error" class="auth-error" role="alert"></p>
+            </form>
+
+            <footer class="auth-footer">
+                <small>© 2026 MEGAWATT ACADEMY — Tous droits réservés</small>
+            </footer>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- APPLICATION PRINCIPALE                                       -->
+    <!-- ============================================================ -->
+    <div id="app" class="app" style="display:none;">
+
+        <!-- ============ SIDEBAR ============ -->
+        <aside id="sidebar" class="sidebar" aria-label="Menu principal">
+            <div class="sidebar-header">
+                <img id="sidebar-logo" src="assets/logo-megawatt.png" alt="Logo MEGAWATT"
+                     onerror="this.style.display='none'; document.getElementById('sidebar-logo-fallback').style.display='flex';" />
+                <div id="sidebar-logo-fallback" class="sidebar-logo-fallback" style="display:none;">
+                    <span>M</span>
+                </div>
+                <h2 class="sidebar-title">MEGAWATT</h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button type="button" class="nav-item" data-view="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Tableau de bord</span>
+                </button>
+                <button type="button" class="nav-item" data-view="questions">
+                    <span class="nav-icon">❓</span>
+                    <span class="nav-label">Banque de questions</span>
+                </button>
+                <button type="button" class="nav-item" data-view="exams">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-label">Examens</span>
+                </button>
+                <button type="button" class="nav-item" data-view="learner">
+                    <span class="nav-icon">🎓</span>
+                    <span class="nav-label">Passer un examen</span>
+                </button>
+                <button type="button" class="nav-item" data-view="results">
+                    <span class="nav-icon">✅</span>
+                    <span class="nav-label">Résultats</span>
+                </button>
+                <button type="button" class="nav-item" data-view="certificates">
+                    <span class="nav-icon">🏆</span>
+                    <span class="nav-label">Certificats</span>
+                </button>
+                <button type="button" class="nav-item" data-view="reports">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-label">Rapports RH</span>
+                </button>
+                <button type="button" class="nav-item" data-view="users">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-label">Utilisateurs</span>
+                </button>
+                <button type="button" class="nav-item" data-view="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Paramètres</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">A</div>
+                    <div class="user-details">
+                        <p class="user-name" id="user-name">Utilisateur</p>
+                        <p class="user-role" id="user-role">Rôle</p>
+                    </div>
+                </div>
+                <button type="button" id="btn-logout" class="btn btn-outline btn-block">
+                    🚪 Déconnexion
+                </button>
+            </div>
+        </aside>
+
+        <!-- ============ CONTENU PRINCIPAL ============ -->
+        <main id="main-content" class="main-content">
+
+            <!-- Barre supérieure -->
+            <header class="topbar">
+                <button type="button" id="btn-toggle-sidebar" class="btn-icon" aria-label="Ouvrir le menu">
+                    ☰
+                </button>
+                <h1 class="page-title" id="page-title">Tableau de bord</h1>
+                <div class="topbar-actions">
+                    <span class="current-date" id="current-date"></span>
+                    <button type="button" id="btn-notifications" class="btn-icon" aria-label="Notifications">
+                        🔔
+                    </button>
+                </div>
+            </header>
+
+            <!-- Conteneur de vues -->
+            <div id="view-container" class="view-container">
+
+                <!-- ============ VUE : DASHBOARD ============ -->
+                <section id="view-dashboard" class="view" data-view="dashboard">
+                    <div class="stats-grid">
+                        <div class="stat-card stat-primary">
+                            <div class="stat-icon">📝</div>
+                            <div class="stat-content">
+                                <p class="stat-label">Examens actifs</p>
+                                <p class="stat-value" id="stat-exams">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-success">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-content">
+                                <p class="stat-label">Candidats</p>
+                                <p class="stat-value" id="stat-candidates">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-warning">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-content">
+                                <p class="stat-label">Réussites</p>
+                                <p class="stat-value" id="stat-success">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-danger">
+                            <div class="stat-icon">❌</div>
+                            <div class="stat-content">
+                                <p class="stat-label">Échecs</p>
+                                <p class="stat-value" id="stat-failures">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Évolution des résultats</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chart-results"></canvas>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Répartition par rôle</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chart-roles"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Dernières activités</h3>
+                        </div>
+                        <div class="card-body">
+                            <ul id="recent-activities" class="activity-list"></ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============ VUE : QUESTIONS ============ -->
+                <section id="view-questions" class="view" data-view="questions" style="display:none;">
+                    <div class="view-header">
+                        <h2>Banque de questions</h2>
+                        <div class="view-actions">
+                            <button type="button" id="btn-import-json" class="btn btn-outline">
+                                📥 Import JSON
+                            </button>
+                            <button type="button" id="btn-export-json" class="btn btn-outline">
+                                📤 Export JSON
+                            </button>
+                            <button type="button" id="btn-import-xlsx" class="btn btn-outline">
+                                📥 Import XLSX
+                            </button>
+                            <button type="button" id="btn-export-xlsx" class="btn btn-outline">
+                                📤 Export XLSX
+                            </button>
+                            <button type="button" id="btn-add-question" class="btn btn-primary">
+                                ➕ Nouvelle question
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <input type="search" id="search-questions" class="search-input"
+                                   placeholder="🔍 Rechercher une question..." />
+                        </div>
+                        <div class="card-body">
+                            <div class="table-wrapper">
+                                <table class="data-table" id="questions-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Question</th>
+                                            <th>Type</th>
+                                            <th>Points</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="questions-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============ VUE : EXAMENS ============ -->
+                <section id="view-exams" class="view" data-view="exams" style="display:none;">
+                    <div class="view-header">
+                        <h2>Gestion des examens</h2>
+                        <button type="button" id="btn-add-exam" class="btn btn-primary">
+                            ➕ Nouvel examen
+                        </button>
+                    </div>
+
+                    <div class="cards-grid" id="exams-grid"></div>
+                </section>
+
+                <!-- ============ VUE : APPRENANT ============ -->
+                <section id="view-learner" class="view" data-view="learner" style="display:none;">
+                    <div class="view-header">
+                        <h2>Passer un examen</h2>
+                    </div>
+
+                    <!-- Étape 1 : Sélection de l'examen -->
+                    <div id="learner-step-1" class="learner-step">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Informations du candidat</h3>
+                            </div>
+                            <div class="card-body">
+                                <form id="learner-info-form" class="form-grid">
+                                    <div class="form-group">
+                                        <label for="learner-lastname">Nom *</label>
+                                        <input type="text" id="learner-lastname" required />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="learner-firstname">Prénom *</label>
+                                        <input type="text" id="learner-firstname" required />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="learner-email">Email *</label>
+                                        <input type="email" id="learner-email" required />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="learner-service">Service</label>
+                                        <input type="text" id="learner-service" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="learner-function">Fonction</label>
+                                        <input type="text" id="learner-function" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="learner-exam">Examen *</label>
+                                        <select id="learner-exam" required>
+                                            <option value="">-- Choisir un examen --</option>
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="card-footer">
+                                <button type="button" id="btn-start-exam" class="btn btn-primary">
+                                    Commencer l'examen ▶
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Étape 2 : Examen en cours -->
+                    <div id="learner-step-2" class="learner-step" style="display:none;">
+                        <div class="exam-container">
+                            <div class="exam-header">
+                                <div class="exam-timer">
+                                    <span class="timer-icon">⏱</span>
+                                    <span id="exam-timer">00:00</span>
+                                </div>
+                                <div class="exam-progress">
+                                    <span id="exam-progress-text">Question 1 / 10</span>
+                                    <div class="progress-bar">
+                                        <div id="exam-progress-fill" class="progress-fill"></div>
+                                    </div>
+                                </div>
+                                <div class="exam-alerts">
+                                    <span id="tab-change-warning" class="alert-badge" style="display:none;">
+                                        ⚠️ Changement d'onglet détecté
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="exam-body">
+                                <div id="exam-question-container" class="question-container"></div>
+                            </div>
+
+                            <div class="exam-footer">
+                                <button type="button" id="btn-prev-question" class="btn btn-outline">
+                                    ◀ Précédent
+                                </button>
+                                <button type="button" id="btn-mark-review" class="btn btn-warning">
+                                    🚩 À revoir
+                                </button>
+                                <button type="button" id="btn-next-question" class="btn btn-primary">
+                                    Suivant ▶
+                                </button>
+                                <button type="button" id="btn-submit-exam" class="btn btn-success" style="display:none;">
+                                    ✓ Terminer l'examen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Étape 3 : Signature -->
+                    <div id="learner-step-3" class="learner-step" style="display:none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Signature électronique</h3>
+                                <p>Signez dans la zone ci-dessous pour valider votre examen.</p>
+                            </div>
+                            <div class="card-body signature-body">
+                                <canvas id="signature-canvas" width="600" height="200"></canvas>
+                                <button type="button" id="btn-clear-signature" class="btn btn-outline">
+                                    Effacer
+                                </button>
+                            </div>
+                            <div class="card-footer">
+                                <button type="button" id="btn-validate-signature" class="btn btn-success">
+                                    ✓ Valider et soumettre
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============ VUE : RÉSULTATS ============ -->
+                <section id="view-results" class="view" data-view="results" style="display:none;">
+                    <div class="view-header">
+                        <h2>Résultats des examens</h2>
+                        <div class="view-actions">
+                            <button type="button" id="btn-export-results-csv" class="btn btn-outline">
+                                📤 Export CSV
+                            </button>
+                            <button type="button" id="btn-export-results-pdf" class="btn btn-outline">
+                                📤 Export PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-wrapper">
+                                <table class="data-table" id="results-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Candidat</th>
+                                            <th>Examen</th>
+                                            <th>Score</th>
+                                            <th>Note /20</th>
+                                            <th>Statut</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="results-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============ VUE : CERTIFICATS ============ -->
+                <section id="view-certificates" class="view" data-view="certificates" style="display:none;">
+                    <div class="view-header">
+                        <h2>Certificats</h2>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <input type="text" id="certificate-verify-input" class="search-input"
+                                   placeholder="🔍 Saisir une référence (MW-AAAA-XXXXX) pour vérifier" />
+                            <button type="button" id="btn-verify-certificate" class="btn btn-primary">
+                                Vérifier
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="certificate-verify-result"></div>
+                            <div class="table-wrapper">
+                                <table class="data-table" id="certificates-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Référence</th>
+                                            <th>Candidat</th>
+                                            <th>Examen</th>
+                                            <th>Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="certificates-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============ VUE : RAPPORTS ============ -->
+                <section id="view-reports" class="view" data-view="reports" style="display:none;">
+                    <div class="view-header">
+                        <h2>Rapports RH</h2>
+                        <div class="view-actions">
+                            <button type="button" id="btn-export-report-csv" class="btn btn-outline">
+                                📤 Export CSV
+                            </button>
+                            <button type="button" id="btn-export-report-pdf" class="btn btn-outline">
+                                📤 Export PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card stat-primary">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-content">
+                                <p class="stat-label">Total candidats</p>
+                                <p class="stat-value" id="report-total">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-success">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-content">
+                                <p class="stat-label">Taux de réussite</p>
+                                <p class="stat-value" id="report-success-rate">0%</p>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-warning">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-content">
+                                <p class="stat-label">Moyenne générale</p>
+                                <p class="stat-value" id="report-average">0/20</p>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-danger">
+                            <div class="stat-icon">🚨</div>
+                            <div class="stat-content">
+                                <p class="stat-label">Incidents fraude</p>
+                                <p class="stat-value" id="report-fraud">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Top 10 des candidats</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chart-top10"></canvas>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Questions les plus ratées</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chart-failed-questions"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Classement complet</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-wrapper">
+                                <table class="data-table" id="ranking-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Rang</th>
+                                            <th>Candidat</th>
+                                            <th>Examen</th>
+                                            <th>Note /20</th>
+                                            <th>Pourcentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ranking-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============ VUE : UTILISATEURS ============ -->
+                <section id="view-users" class="view" data-view="users" style="display:none;">
+                    <div class="view-header">
+                        <h2>Gestion des utilisateurs</h2>
+                        <button type="button" id="btn-add-user" class="btn btn-primary">
+                            ➕ Nouvel utilisateur
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-wrapper">
+                                <table class="data-table" id="users-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Identifiant</th>
+                                            <th>Nom complet</th>
+                                            <th>Email</th>
+                                            <th>Rôle</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="users-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============ VUE : PARAMÈTRES ============ -->
+                <section id="view-settings" class="view" data-view="settings" style="display:none;">
+                    <div class="view-header">
+                        <h2>Paramètres</h2>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Configuration générale</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="settings-form" class="form-grid">
+                                <div class="form-group">
+                                    <label for="setting-bareme">Barème de réussite (%)</label>
+                                    <input type="number" id="setting-bareme" min="0" max="100" value="60" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="setting-max-tab-changes">Changements d'onglet max</label>
+                                    <input type="number" id="setting-max-tab-changes" min="0" max="10" value="3" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="setting-session-timeout">Expiration session (min)</label>
+                                    <input type="number" id="setting-session-timeout" min="5" max="480" value="60" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="setting-web3forms-key">Clé Web3Forms</label>
+                                    <input type="text" id="setting-web3forms-key" placeholder="Votre clé API Web3Forms" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="setting-emailjs-service">EmailJS Service ID</label>
+                                    <input type="text" id="setting-emailjs-service" placeholder="service_xxx" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="setting-emailjs-template">EmailJS Template ID</label>
+                                    <input type="text" id="setting-emailjs-template" placeholder="template_xxx" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="setting-emailjs-user">EmailJS User ID</label>
+                                    <input type="text" id="setting-emailjs-user" placeholder="user_xxx" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="setting-email-dest">Email destinataire RH</label>
+                                    <input type="email" id="setting-email-dest" placeholder="rh@megawatt.com" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="setting-whatsapp">Numéro WhatsApp</label>
+                                    <input type="tel" id="setting-whatsapp" placeholder="+225XXXXXXXX" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="setting-logo">Logo MEGAWATT (PNG/JPG/SVG)</label>
+                                    <input type="file" id="setting-logo" accept="image/png,image/jpeg,image/svg+xml" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="setting-signature">Signature formateur</label>
+                                    <input type="file" id="setting-signature" accept="image/png,image/jpeg,image/svg+xml" />
+                                </div>
+                            </form>
+                        </div>
+                        <div class="card-footer">
+                            <button type="button" id="btn-save-settings" class="btn btn-primary">
+                                💾 Enregistrer
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Journal des incidents</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-wrapper">
+                                <table class="data-table" id="incidents-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Candidat</th>
+                                            <th>Type</th>
+                                            <th>Détails</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="incidents-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MODALE GÉNÉRIQUE                                             -->
+    <!-- ============================================================ -->
+    <div id="modal-overlay" class="modal-overlay" style="display:none;">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <div class="modal-header">
+                <h3 id="modal-title">Titre</h3>
+                <button type="button" class="modal-close" id="btn-modal-close" aria-label="Fermer">×</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer" id="modal-footer"></div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TOAST NOTIFICATIONS                                          -->
+    <!-- ============================================================ -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <!-- ============================================================ -->
+    <!-- FICHIERS JAVASCRIPT (ordre de chargement critique)           -->
+    <!-- ============================================================ -->
+    <script src="js/storage.js"></script>
+    <script src="js/security.js"></script>
+    <script src="js/trainer.js"></script>
+    <script src="js/exam.js"></script>
+    <script src="js/certificates.js"></script>
+    <script src="js/reports.js"></script>
+    <script src="js/mailer.js"></script>
+    <script src="js/app.js"></script>
+
+</body>
+</html>
