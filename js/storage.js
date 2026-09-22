@@ -98,11 +98,18 @@ const MWStorage = (() => {
     }
 
     /**
-     * Sauvegarde des données dans localStorage
+     * Sauvegarde des données dans localStorage et synchronise avec le cloud
      */
     function set(key, data) {
         try {
             localStorage.setItem(key, JSON.stringify(data));
+            
+            // ⬇️ AJOUT : Synchronisation avec Firebase en arrière-plan
+            if (typeof MWFirebase !== 'undefined') {
+                MWFirebase.syncToFirestore(key, data);
+            }
+            // ⬆️ FIN AJOUT
+            
             return true;
         } catch (error) {
             console.error(`Erreur écriture storage [${key}]:`, error);
@@ -732,13 +739,19 @@ const MWStorage = (() => {
         }
     };
 
-    // ============ INITIALISATION ============
-
-    /**
-     * Initialise le stockage avec les données par défaut
+      /**
+     * Initialise le stockage avec les données par défaut et synchronise avec le cloud
      */
-    function initialize() {
-        // Vérifier si déjà initialisé
+    async function initialize() { // ⬅️ AJOUT DU MOT "async" ICI
+        
+        // ⬇️ AJOUT : Synchronisation depuis le cloud au démarrage
+        if (typeof MWFirebase !== 'undefined') {
+            await MWFirebase.init();
+            await MWFirebase.syncFromFirestore();
+        }
+        // ⬆️ FIN AJOUT
+
+        // Vérifier si déjà initialisé (après la synchro cloud)
         if (get(KEYS.INITIALIZED)) {
             return;
         }
@@ -760,7 +773,14 @@ const MWStorage = (() => {
         // Marquer comme initialisé
         set(KEYS.INITIALIZED, true);
 
-        console.log('✅ MEGAWATT ACADEMY - Stockage initialisé');
+        // ⬇️ AJOUT : Pousser les données par défaut vers le cloud si c'est la toute première fois
+        if (typeof MWFirebase !== 'undefined') {
+            await MWFirebase.syncToFirestore(KEYS.USERS, users);
+            await MWFirebase.syncToFirestore(KEYS.SETTINGS, { ...DEFAULT_SETTINGS });
+        }
+        // ⬆️ FIN AJOUT
+
+        console.log('✅ MEGAWATT ACADEMY - Stockage initialisé et synchronisé');
     }
 
     // ============ EXPORT / IMPORT GLOBAL ============

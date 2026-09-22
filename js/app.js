@@ -815,8 +815,11 @@ const MWApp = (() => {
 })();
 
 // ============ DÉMARRAGE DE L'APPLICATION ============
-document.addEventListener('DOMContentLoaded', () => {
-    // Petit délai pour laisser les modules se charger
+document.addEventListener('DOMContentLoaded', async () => {
+    // Attendre que le stockage (et la synchronisation cloud) soit prêt
+    await MWStorage.initialize();
+    
+    // Petit délai pour laisser les autres modules se charger
     setTimeout(() => {
         MWApp.init();
     }, 100);
