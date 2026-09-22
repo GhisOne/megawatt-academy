@@ -1,5 +1,6 @@
 /* ============================================================
    MEGAWATT ACADEMY - Module Firebase (Synchronisation Cloud)
+   Version COMPAT (compatible chargement script classique)
    ============================================================ */
 
 const MWFirebase = (() => {
@@ -8,7 +9,7 @@ const MWFirebase = (() => {
     let db = null;
     let isInitialized = false;
 
-    // Votre configuration Firebase
+    // Configuration Firebase
     const config = {
         apiKey: "AIzaSyAaebeeDHzfX06gnYdSB2vzhLBPgVY9REQ",
         authDomain: "megawatt-academy.firebaseapp.com",
@@ -24,11 +25,14 @@ const MWFirebase = (() => {
     async function init() {
         if (isInitialized) return;
         try {
-            const { initializeApp } = firebase;
-            const { getFirestore } = firebase.firestore;
-            
-            const app = initializeApp(config);
-            db = getFirestore(app);
+            // Vérifier que Firebase est chargé
+            if (typeof firebase === 'undefined') {
+                throw new Error('SDK Firebase non chargé');
+            }
+
+            // Initialiser l'app Firebase (API compat)
+            firebase.initializeApp(config);
+            db = firebase.firestore();
             isInitialized = true;
             console.log('✅ Firebase initialisé avec succès');
         } catch (error) {
@@ -42,19 +46,28 @@ const MWFirebase = (() => {
     async function syncFromFirestore() {
         if (!db) return;
         try {
-            const { collection, doc, getDoc } = firebase.firestore;
-            const keys = ['mw_users', 'mw_questions', 'mw_exams', 'mw_results', 'mw_certificates', 'mw_settings', 'mw_incidents'];
-            
+            const keys = [
+                'mw_users',
+                'mw_questions',
+                'mw_exams',
+                'mw_results',
+                'mw_certificates',
+                'mw_settings',
+                'mw_incidents'
+            ];
+
             for (const key of keys) {
                 const collectionName = key.replace('mw_', '');
-                const docRef = doc(db, collectionName, 'all');
-                const docSnap = await getDoc(docRef);
-                
-                if (docSnap.exists()) {
+                const docRef = db.collection(collectionName).doc('all');
+                const docSnap = await docRef.get();
+
+                if (docSnap.exists) {
                     // Le cloud a des données : on met à jour le navigateur
-                    localStorage.setItem(key, JSON.stringify(docSnap.data().data));
+                    const cloudData = docSnap.data().data;
+                    localStorage.setItem(key, JSON.stringify(cloudData));
+                    console.log(`📥 ${key} synchronisé depuis le cloud (${Array.isArray(cloudData) ? cloudData.length : 0} éléments)`);
                 } else {
-                    // Le cloud est vide : on garde les données locales (pour la migration)
+                    // Le cloud est vide : on garde les données locales
                     if (!localStorage.getItem(key)) {
                         localStorage.setItem(key, JSON.stringify([]));
                     }
@@ -73,17 +86,19 @@ const MWFirebase = (() => {
     async function syncToFirestore(key, data) {
         if (!db) return;
         try {
-            const { doc, setDoc } = firebase.firestore;
             const collectionName = key.replace('mw_', '');
-            
-            await setDoc(doc(db, collectionName, 'all'), { 
-                data: data, 
-                updatedAt: new Date().toISOString() 
+            await db.collection(collectionName).doc('all').set({
+                data: data,
+                updatedAt: new Date().toISOString()
             });
         } catch (error) {
-            console.error(`❌ Erreur de synchronisation vers Firestore (${key}):`, error);
+            console.error(`❌ Erreur sync vers Firestore (${key}):`, error);
         }
     }
 
-    return { init, syncFromFirestore, syncToFirestore };
+    return {
+        init,
+        syncFromFirestore,
+        syncToFirestore
+    };
 })();
