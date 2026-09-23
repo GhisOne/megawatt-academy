@@ -97,18 +97,29 @@ const MWStorage = (() => {
         }
     }
 
-    /**
+        /**
      * Sauvegarde des données dans localStorage et synchronise avec le cloud
      */
     function set(key, data) {
         try {
             localStorage.setItem(key, JSON.stringify(data));
             
-            // ⬇️ AJOUT : Synchronisation avec Firebase en arrière-plan
-            if (typeof MWFirebase !== 'undefined') {
+            // ⬇️ EMPÊCHER la synchronisation des données purement locales
+            const noSyncKeys = [
+                'mw_session', 
+                'mw_initialized', 
+                'mw_fingerprint', 
+                'mw_login_attempts', 
+                'mw_tab_changes', 
+                'mw_exam_context',
+                'mw_local_backups',
+                'mw_last_auto_backup'
+            ];
+            
+            if (typeof MWFirebase !== 'undefined' && !noSyncKeys.includes(key)) {
                 MWFirebase.syncToFirestore(key, data);
             }
-            // ⬆️ FIN AJOUT
+            // ⬆️ FIN DE L'EMPÊCHEMENT
             
             return true;
         } catch (error) {
@@ -116,7 +127,6 @@ const MWStorage = (() => {
             return false;
         }
     }
-
     /**
      * Supprime des données du localStorage
      */
